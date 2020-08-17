@@ -31,7 +31,7 @@ void PortDIntHandler(void){
 void TimerCaptureIntHandler_0(void){
 	TimerIntClear(WTIMER0_BASE, (TIMER_TIMA_TIMEOUT | TIMER_CAPA_EVENT ));
 	TimerIntClear(WTIMER0_BASE, (TIMER_TIMB_TIMEOUT | TIMER_CAPB_EVENT ));
-	LED_TOGGLE(blue_led);
+	//LED_TOGGLE(blue_led);
 	channel_0 = TimerValueGet(WTIMER0_BASE, TIMER_B)/80;
 	HWREG(WTIMER0_BASE+TIMER_O_TBV)=0;
 }
@@ -39,7 +39,7 @@ void TimerCaptureIntHandler_0(void){
 void TimerCaptureIntHandler_1(void){
 	TimerIntClear(WTIMER1_BASE, (TIMER_TIMA_TIMEOUT | TIMER_CAPA_EVENT ));
 	TimerIntClear(WTIMER1_BASE, (TIMER_TIMB_TIMEOUT | TIMER_CAPB_EVENT ));
-	LED_TOGGLE(blue_led);
+	//LED_TOGGLE(blue_led);
 	channel_1 = mapf(TimerValueGet(WTIMER1_BASE, TIMER_B)/80, 1000, 2000, 2000, 1000);
 	HWREG(WTIMER1_BASE+TIMER_O_TBV)=0;
 }
@@ -47,7 +47,7 @@ void TimerCaptureIntHandler_1(void){
 void TimerCaptureIntHandler_2(void){
 	TimerIntClear(WTIMER3_BASE, (TIMER_TIMA_TIMEOUT | TIMER_CAPA_EVENT ));
 	TimerIntClear(WTIMER3_BASE, (TIMER_TIMB_TIMEOUT | TIMER_CAPB_EVENT ));
-	LED_TOGGLE(blue_led);
+	//LED_TOGGLE(blue_led);
 	channel_2 = TimerValueGet(WTIMER3_BASE, TIMER_B)/80;
 	HWREG(WTIMER3_BASE+TIMER_O_TBV)=0;
 }
@@ -55,7 +55,7 @@ void TimerCaptureIntHandler_2(void){
 void TimerCaptureIntHandler_3(void){
 	TimerIntClear(WTIMER5_BASE, (TIMER_TIMA_TIMEOUT | TIMER_CAPA_EVENT ));
 	TimerIntClear(WTIMER5_BASE, (TIMER_TIMB_TIMEOUT | TIMER_CAPB_EVENT ));
-	LED_TOGGLE(blue_led);
+	//LED_TOGGLE(blue_led);
 	channel_3 = TimerValueGet(WTIMER5_BASE, TIMER_B)/80;
 	HWREG(WTIMER5_BASE+TIMER_O_TBV)=0;
 }

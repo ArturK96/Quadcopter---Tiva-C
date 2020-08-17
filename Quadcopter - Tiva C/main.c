@@ -16,15 +16,13 @@
 #include "MPU6050_LIB.h"
 #include "InterruptHandlers_LIB.h"
 #include "PID_LIB.h"
-#include "MadgwickAHRS.h"
+//#include "MadgwickAHRS.h"
 
 
 uint32_t SystemCoreClock = 80000000;
 
 TaskHandle_t myTask1Handle = NULL;
 TaskHandle_t myTask2Handle = NULL;
-TaskHandle_t myTask3Handle = NULL;
-TaskHandle_t myTask4Handle = NULL;
 
 QueueHandle_t myQueue;
 bool start = false;
@@ -35,21 +33,23 @@ float Power_FL, Power_FR, Power_BL, Power_BR;
 int32_t pwmVal, throttle, yaw_remote;
 int32_t rollPWM, pitchPWM, pitch_PID_input, roll_PID_input, pitch_remote, roll_remote;
 uint32_t zmienna_1, zmienna_3;
+uint16_t angle_ready = 0;
+float angle_calib_pitch, angle_calib_roll;
 
 ////////////////////////////////////////////////////////////////////////////////////////
-float pid_p_gain_roll = 1.3;               //Gain setting for the roll P-controller
-float pid_i_gain_roll = 0.04;              //Gain setting for the roll I-controller
-float pid_d_gain_roll = 18.0;              //Gain setting for the roll D-controller
+float pid_p_gain_roll = 1.2; //1.3;               //Gain setting for the roll P-controller
+float pid_i_gain_roll = 0.01;//0.02; //0.04;              //Gain setting for the roll I-controller
+float pid_d_gain_roll = 10; //18.0;              //Gain setting for the roll D-controller
 int pid_max_roll = 400;                    //Maximum output of the PID-controller (+/-)
-float pid_p_gain_pitch = 1.3;  //Gain setting for the pitch P-controller.
-float pid_i_gain_pitch = 0.04;  //Gain setting for the pitch I-controller.
-float pid_d_gain_pitch = 18.0;  //Gain setting for the pitch D-controller.
+float pid_p_gain_pitch = 1.2; //1.3;  //Gain setting for the pitch P-controller.
+float pid_i_gain_pitch = 0.01;//0.02; //0.04;  //Gain setting for the pitch I-controller.
+float pid_d_gain_pitch = 10; //18.0;  //Gain setting for the pitch D-controller.
 int pid_max_pitch = 400;          //Maximum output of the PID-controller (+/-)
-float pid_p_gain_yaw = 4.0;                //Gain setting for the pitch P-controller. //4.0
-float pid_i_gain_yaw = 0.02;               //Gain setting for the pitch I-controller. //0.02
-float pid_d_gain_yaw = 0.0;                //Gain setting for the pitch D-controller.
+float pid_p_gain_yaw = 3; //4.0;                //Gain setting for the pitch P-controller. //4.0
+float pid_i_gain_yaw = 0.02; //0.02;               //Gain setting for the pitch I-controller. //0.02
+float pid_d_gain_yaw = 0; //0.0;                //Gain setting for the pitch D-controller.
 int pid_max_yaw = 400;                     //Maximum output of the PID-controller (+/-)
-void calculate_pid();
+void Calculate_PID(void);
 float pid_error_temp;
 float pid_i_mem_roll, pid_roll_setpoint, gyro_roll_input, pid_output_roll, pid_last_roll_d_error;
 float pid_i_mem_pitch, pid_pitch_setpoint, gyro_pitch_input, pid_output_pitch, pid_last_pitch_d_error;
@@ -64,25 +64,16 @@ void myTask1(void *p){
 	myLastUnblock = xTaskGetTickCount();
 	
 	while(1){
-//		MPU6050_Read_Data();
-//		
-//		MadgwickAHRSupdateIMU(gyro_x, gyro_y, gyro_z, accel_x, accel_y, accel_z);
-//		roll = (asinf(-2.0f * (q1*q3 - q0*q2))*(180/3.14));
-//		pitch = atan2f(q0*q1 + q2*q3, 0.5f - q1*q1 - q2*q2)*(180/3.14);
-//		yaw = atan2f(q1*q2 + q0*q3, 0.5f - q2*q2 - q3*q3)*(180/3.14);
 		
 		gyro_roll_input = (gyro_roll_input * 0.8) + ((gyro_roll / 65.5) * 0.2);   //Gyro pid input is deg/sec.
 		gyro_pitch_input = (gyro_pitch_input * 0.8) + ((gyro_pitch / 65.5) * 0.2);//Gyro pid input is deg/sec.
 		gyro_yaw_input = -((gyro_yaw_input * 0.8) + ((gyro_yaw / 65.5) * 0.2));      //Gyro pid input is deg/sec.
 		
-		read_mpu_6050_data();
-		calculate_mpu_6050_angles();
+		Read_MPU6050_Data();
+		Calculate_MPU6050_Angles();
 		
-		throttle = channel_0;
-//		pitch_remote = channel_1;
-//		roll_remote = channel_3;
-//		yaw_remote = channel_2;
-		
+			throttle = channel_0;
+			
 		if((channel_2<1050) && (channel_0<1050)){
 			start = false;
 			pid_i_mem_roll = 0;
@@ -96,9 +87,11 @@ void myTask1(void *p){
 			start = true;
 		}
 
+		angle_pitch_output = ((float)((int)(angle_pitch_output*10)))/10;
+		angle_roll_output = ((float)((int)(angle_roll_output*10)))/10;
 		
-		pitch_level_adjust = 0;//angle_pitch_output * 15;                                    //Calculate the pitch angle correction
-		roll_level_adjust = 0;//angle_roll_output * 15;                                      //Calculate the roll angle correction
+		pitch_level_adjust = angle_pitch_output * 15; //*15                                   //Calculate the pitch angle correction
+		roll_level_adjust = angle_roll_output * 15;  //* 15                                    //Calculate the roll angle correction
 		
 		receiver_input_channel_1 = channel_3;
 		pid_roll_setpoint = 0;
@@ -123,7 +116,7 @@ void myTask1(void *p){
 			else if(receiver_input_channel_4 < 1492)pid_yaw_setpoint = (receiver_input_channel_4 - 1492)/3.0;
 		}
 		
-		calculate_pid(); 
+		Calculate_PID(); 
 		
 		if(start){                                                          //The motors are started.
 			if (throttle > 1800) throttle = 1800;                                   //We need some room to keep full control at full throttle.
@@ -161,14 +154,18 @@ void myTask1(void *p){
 		PWM_Set_Value_FR_Motor(Power_FR);
 		PWM_Set_Value_BL_Motor(Power_BL);
 		PWM_Set_Value_BR_Motor(Power_BR);	
-		
 
-		
-		sprintf(str, "pitch: %f, gyro: %f\r", angle_pitch_output, gyro_pitch_input);
+
+//		for(int i=0; i<10000000; i++){
+//			angle_calib_pitch += angle_pitch_acc;
+//			angle_calib_roll += angle_roll_acc;
+//		}
+//		angle_calib_pitch /= 10000000;
+//		angle_calib_roll /= 10000000;
+		sprintf(str, "pitch: %f, roll: %f\r", angle_pitch_output, angle_roll_output);
 		//UART_0_Transmit(str, 42);
 		UART_1_Transmit(str, 42);
 		
-		LED_TOGGLE(blue_led);
 		vTaskDelayUntil(&myLastUnblock, 4 * configTICK_RATE_HZ/1000); //4 ms period (250 Hz)
 		zmienna_1++;
 	}
@@ -177,10 +174,11 @@ void myTask1(void *p){
 void myTask2(void *p){
 	
 	while(1){
-			adcVal = (ADC_Value_Get())*0.593;
+			adcVal = (ADC_Value_Get())*0.3313;
 			battery_voltage = battery_voltage*0.92 + 0.08*adcVal;
 			battery_voltage = (int)battery_voltage;
 			if(battery_voltage<1050 && battery_voltage>600) LED_ON(red_led);
+			else LED_ON(green_led+red_led);
 	}
 }
 
@@ -194,7 +192,6 @@ int main(){
 	I2C_Init();
 	ADC_Init();
 	Timer_Capture_Init();
-//	MPU6050_Init();
 	battery_voltage = 1260;
 	
 	PWM_Set_Value_FL_Motor(2000);
@@ -209,24 +206,19 @@ int main(){
 	PWM_Set_Value_BR_Motor(1000);
 	SysCtlDelay(100000000);
 	
-/////////////////////////////////////////////////////////////////////
-	set_gyro_registers();
-/////////////////////////////////////////////////////////////////////
+	Setup_MPU6050_Registers();
+	LED_ON(green_led);
 	
 	xTaskCreate(myTask1, "task1", 200, (void*) 0, 2, &myTask1Handle);
 	xTaskCreate(myTask2, "task2", 200, (void*) 0, tskIDLE_PRIORITY, &myTask2Handle);
-
-	
 	vTaskStartScheduler();
 	
-	
 	while(1);
-	
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////////
-void calculate_pid(){
+void Calculate_PID(void){
   //Roll calculations
   pid_error_temp = gyro_roll_input - pid_roll_setpoint;
   pid_i_mem_roll += pid_i_gain_roll * pid_error_temp;
