@@ -502,6 +502,16 @@
               <FileType>5</FileType>
               <FilePath>.\PID_LIB.h</FilePath>
             </File>
+            <File>
+              <FileName>MOTOR_CONTROL_LIB.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\MOTOR_CONTROL_LIB.c</FilePath>
+            </File>
+            <File>
+              <FileName>MOTOR_CONTROL_LIB.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\MOTOR_CONTROL_LIB.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

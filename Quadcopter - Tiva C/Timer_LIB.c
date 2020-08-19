@@ -18,9 +18,9 @@ void Timer_Capture_Init(void){
 	
 	//Timer 0
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
-  GPIOPinConfigure(GPIO_PC4_WT0CCP0);
+	GPIOPinConfigure(GPIO_PC4_WT0CCP0);
 	GPIOPinConfigure(GPIO_PC5_WT0CCP1);
-  GPIOPinTypeTimer(GPIO_PORTC_BASE, GPIO_PIN_4|GPIO_PIN_5);
+	GPIOPinTypeTimer(GPIO_PORTC_BASE, GPIO_PIN_4|GPIO_PIN_5);
 
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_WTIMER0);
 	TimerDisable(WTIMER0_BASE, TIMER_A|TIMER_B);
@@ -39,9 +39,9 @@ void Timer_Capture_Init(void){
 	
 	//Timer 1
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
-  GPIOPinConfigure(GPIO_PC6_WT1CCP0);
+	GPIOPinConfigure(GPIO_PC6_WT1CCP0);
 	GPIOPinConfigure(GPIO_PC7_WT1CCP1);
-  GPIOPinTypeTimer(GPIO_PORTC_BASE, GPIO_PIN_6|GPIO_PIN_7);
+	GPIOPinTypeTimer(GPIO_PORTC_BASE, GPIO_PIN_6|GPIO_PIN_7);
 
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_WTIMER1);
 	TimerDisable(WTIMER1_BASE, TIMER_A|TIMER_B);
@@ -60,9 +60,9 @@ void Timer_Capture_Init(void){
 	
 	//Timer 2
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOD);
-  GPIOPinConfigure(GPIO_PD2_WT3CCP0);
+	GPIOPinConfigure(GPIO_PD2_WT3CCP0);
 	GPIOPinConfigure(GPIO_PD3_WT3CCP1);
-  GPIOPinTypeTimer(GPIO_PORTD_BASE, GPIO_PIN_2|GPIO_PIN_3);
+	GPIOPinTypeTimer(GPIO_PORTD_BASE, GPIO_PIN_2|GPIO_PIN_3);
 
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_WTIMER3);
 	TimerDisable(WTIMER3_BASE, TIMER_A|TIMER_B);
@@ -83,9 +83,9 @@ void Timer_Capture_Init(void){
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOD);
 	GPIO_PORTD_LOCK_R |= 0x4C4F434B;
 	GPIO_PORTD_CR_R |= 0x80;
-  GPIOPinConfigure(GPIO_PD6_WT5CCP0);
+	GPIOPinConfigure(GPIO_PD6_WT5CCP0);
 	GPIOPinConfigure(GPIO_PD7_WT5CCP1);
-  GPIOPinTypeTimer(GPIO_PORTD_BASE, GPIO_PIN_6|GPIO_PIN_7);
+	GPIOPinTypeTimer(GPIO_PORTD_BASE, GPIO_PIN_6|GPIO_PIN_7);
 
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_WTIMER5);
 	TimerDisable(WTIMER5_BASE, TIMER_A|TIMER_B);

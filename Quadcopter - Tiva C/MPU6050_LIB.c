@@ -9,33 +9,32 @@
 #include "MPU6050_LIB.h"
 
 
-static int16_t gyro_x_offset = 0;
-static int16_t gyro_y_offset = 0;
-static int16_t gyro_z_offset = 0;
-static uint32_t samples = 0;
-float accel_x, accel_y, accel_z;
-//float gyro_x, gyro_y, gyro_z, acc_x, acc_y, acc_z;
-int16_t accel_x_raw, accel_y_raw, accel_z_raw, mpu_temp_raw;
-int16_t gyro_x_raw, gyro_y_raw, gyro_z_raw;
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
 int16_t gyro_x, gyro_y, gyro_z;
 int16_t acc_x, acc_y, acc_z, acc_total_vector;
 int16_t mag_x, mag_y, mag_z;
-int temperature;
 long gyro_x_cal, gyro_y_cal, gyro_z_cal = 0;
 long acc_x_cal, acc_y_cal, acc_z_cal = 0;
-long loop_timer;
-int lcd_loop_counter;
 float angle_pitch, angle_roll;
-float angle_gyro_pitch, angle_gyro_roll;
-int angle_pitch_buffer, angle_roll_buffer;
 bool set_gyro_angles;
 float angle_roll_acc, angle_pitch_acc;
 float angle_pitch_output, angle_roll_output;
 double gyro_pitch, gyro_roll, gyro_yaw;
-////////////////////////////////////////////////////////////////////////////////////////////////////
+float gyro_pitch_input, gyro_roll_input, gyro_yaw_input;
 
+int accXout_L, accXout_H, accXout;
+int accYout_L, accYout_H, accYout;
+int accZout_L, accZout_H, accZout;
+
+int gyroXout_L, gyroXout_H, gyroXout;
+int gyroYout_L, gyroYout_H, gyroYout;
+int gyroZout_L, gyroZout_H, gyroZout;
+
+int magXout_L, magXout_H, magXout;
+int magYout_L, magYout_H, magYout;
+int magZout_L, magZout_H, magZout;
+
+
+//MPU-6050 addresses
 #define MPU_ADDRESS		0x68 // AD0 pin na 3.3 V in pol je 0x69, cene nevem (oz niti ne dela (?????))
 
 #define WHO_AM_I		0x75
@@ -63,23 +62,9 @@ double gyro_pitch, gyro_roll, gyro_yaw;
 #define GYRO_ZOUT_L		0x48
 
 
-
-int accXout_L, accXout_H, accXout;
-int accYout_L, accYout_H, accYout;
-int accZout_L, accZout_H, accZout;
-
-int gyroXout_L, gyroXout_H, gyroXout;
-int gyroYout_L, gyroYout_H, gyroYout;
-int gyroZout_L, gyroZout_H, gyroZout;
-
-int magXout_L, magXout_H, magXout;
-int magYout_L, magYout_H, magYout;
-int magZout_L, magZout_H, magZout;
-
-
-//LSM9DS1
+//LSM9DS1 addresses
 #define LSM9DS1_ADDRESS_ACCELGYRO 0x6B //0x6A
-#define LSM9DS1_ADDRESS_MAG 0x1E //0x1C
+#define LSM9DS1_ADDRESS_MAG 0x1E       //0x1C
 
 //accel and gyro addresses
 #define CTRL_REG5_XL 0x1F
@@ -119,7 +104,6 @@ int magZout_L, magZout_H, magZout;
 
 
 
-////////////////////////////////////////////////////////////////////////////////////////////
 void Setup_MPU6050_Registers(void){
   //Setup the MPU-6050
 	I2C_Write(MPU_ADDRESS, PWR_MGMT_1, 0x00);
@@ -191,11 +175,15 @@ void Calculate_MPU6050_Angles(void){
   gyro_pitch = gyro_x;
 	gyro_roll = gyro_y;
 	gyro_yaw = gyro_z;
+	
+	gyro_roll_input = (gyro_roll_input * 0.8) + ((gyro_roll / 65.5) * 0.2);   //Gyro pid input is deg/sec.
+	gyro_pitch_input = (gyro_pitch_input * 0.8) + ((gyro_pitch / 65.5) * 0.2);//Gyro pid input is deg/sec.
+	gyro_yaw_input = -((gyro_yaw_input * 0.8) + ((gyro_yaw / 65.5) * 0.2));      //Gyro pid input is deg/sec.
+	
   //Gyro angle calculations
   //0.0000611 = 1 / (250Hz / 65.5)
   angle_pitch += gyro_x * 0.0000611;                                   //Calculate the traveled pitch angle and add this to the angle_pitch variable
   angle_roll += gyro_y * 0.0000611;                                    //Calculate the traveled roll angle and add this to the angle_roll variable
-	angle_gyro_pitch += gyro_x * 0.0000611;;
 
   
   //0.000001066 = 0.0000611 * (3.142(PI) / 180degr) The Arduino sin function is in radians
@@ -226,6 +214,11 @@ void Calculate_MPU6050_Angles(void){
   angle_pitch_output = angle_pitch_output * 0.9 + angle_pitch * 0.1;   //Take 90% of the output pitch value and add 10% of the raw pitch value
   angle_roll_output = angle_roll_output * 0.9 + angle_roll * 0.1;      //Take 90% of the output roll value and add 10% of the raw roll value
 
+	//Round to first point decimal 
+	angle_pitch_output = ((float)((int)(angle_pitch_output*10)))/10;
+	angle_roll_output = ((float)((int)(angle_roll_output*10)))/10;
+	
+	
 }
 
 void Setup_LSM9DS1_Registers(void){
@@ -315,12 +308,15 @@ void Calculate_LSM9DS1_Angles(void){
   gyro_pitch = gyro_x;
 	gyro_roll = gyro_y;
 	gyro_yaw = gyro_z;
+	
+	gyro_roll_input = (gyro_roll_input * 0.8) + ((gyro_roll * 0.0175) * 0.2);   //Gyro pid input is deg/sec.
+	gyro_pitch_input = (gyro_pitch_input * 0.8) + ((gyro_pitch * 0.0175) * 0.2);//Gyro pid input is deg/sec.
+	gyro_yaw_input = -((gyro_yaw_input * 0.8) + ((gyro_yaw * 0.0175) * 0.2));      //Gyro pid input is deg/sec.
+	
   //Gyro angle calculations
   //0.00007 = (0.0175dps/LSB) / 250Hz
   angle_pitch += gyro_x * 0.00007;                                   //Calculate the traveled pitch angle and add this to the angle_pitch variable
   angle_roll += gyro_y * 0.00007;                                    //Calculate the traveled roll angle and add this to the angle_roll variable
-	angle_gyro_pitch += gyro_x * 0.00007;
-	angle_gyro_roll += gyro_y * 0.00007;
   
   //0.0000048876 = 0.00028 * (3.142(PI) / 180degr) The Arduino sin function is in radians
   angle_pitch += angle_roll * sin(gyro_z * 0.000001222);               //If the IMU has yawed transfer the roll angle to the pitch angel
@@ -350,4 +346,7 @@ void Calculate_LSM9DS1_Angles(void){
   angle_pitch_output = angle_pitch_output * 0.9 + angle_pitch * 0.1;   //Take 90% of the output pitch value and add 10% of the raw pitch value
   angle_roll_output = angle_roll_output * 0.9 + angle_roll * 0.1;      //Take 90% of the output roll value and add 10% of the raw roll value
 
+	//Round to first point decimal 
+	angle_pitch_output = ((float)((int)(angle_pitch_output*10)))/10;
+	angle_roll_output = ((float)((int)(angle_roll_output*10)))/10;
 }

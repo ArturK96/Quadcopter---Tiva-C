@@ -16,7 +16,7 @@ void PWM_Init(void){
 
 	SysCtlPWMClockSet(SYSCTL_PWMDIV_32);
 
-  SysCtlPeripheralEnable(SYSCTL_PERIPH_PWM0);
+	SysCtlPeripheralEnable(SYSCTL_PERIPH_PWM0);
 	SysCtlDelay(2);
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
 	//SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
@@ -28,15 +28,15 @@ void PWM_Init(void){
 	//GPIOPinConfigure(GPIO_PC5_M0PWM7);
 	GPIOPinTypePWM(GPIO_PORTB_BASE, GPIO_PIN_7 | GPIO_PIN_6 | GPIO_PIN_5 | GPIO_PIN_4);
 	PWMGenConfigure(PWM0_BASE, PWM_GEN_0, PWM_GEN_MODE_DOWN | PWM_GEN_MODE_NO_SYNC);
-  PWMGenConfigure(PWM0_BASE, PWM_GEN_1, PWM_GEN_MODE_DOWN | PWM_GEN_MODE_NO_SYNC);//
+	PWMGenConfigure(PWM0_BASE, PWM_GEN_1, PWM_GEN_MODE_DOWN | PWM_GEN_MODE_NO_SYNC);//
 	
 	period = 50000;
 	
 	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, period); // Set the period
-  PWMGenPeriodSet(PWM0_BASE, PWM_GEN_1, period);
+	PWMGenPeriodSet(PWM0_BASE, PWM_GEN_1, period);
 	
 	PWMGenEnable(PWM0_BASE, PWM_GEN_0);
-  PWMGenEnable(PWM0_BASE, PWM_GEN_1);
+	PWMGenEnable(PWM0_BASE, PWM_GEN_1);
 	
 	PWMOutputState(PWM0_BASE,PWM_OUT_1_BIT | PWM_OUT_0_BIT |  PWM_OUT_2_BIT |  PWM_OUT_3_BIT /*| PWM_OUT_7_BIT*/, true);
 }

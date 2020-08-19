@@ -4,6 +4,8 @@
 #include "inc/hw_memmap.h"
 #include "ADC_LIB.h"
 
+float adcVal, battery_voltage;
+
 void ADC_Init(void){	
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_ADC0);
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE);

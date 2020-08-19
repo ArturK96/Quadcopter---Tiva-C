@@ -16,47 +16,18 @@
 #include "MPU6050_LIB.h"
 #include "InterruptHandlers_LIB.h"
 #include "PID_LIB.h"
-//#include "MadgwickAHRS.h"
+#include "MOTOR_CONTROL_LIB.h"
 
 
 uint32_t SystemCoreClock = 80000000;
 
 TaskHandle_t myTask1Handle = NULL;
 TaskHandle_t myTask2Handle = NULL;
-
 QueueHandle_t myQueue;
-bool start = false;
-float pitch, roll;
-char str[42];
-float adcVal, battery_voltage;
-float Power_FL, Power_FR, Power_BL, Power_BR;
-int32_t pwmVal, throttle, yaw_remote;
-int32_t rollPWM, pitchPWM, pitch_PID_input, roll_PID_input, pitch_remote, roll_remote;
-uint32_t zmienna_1, zmienna_3;
-uint16_t angle_ready = 0;
-float angle_calib_pitch, angle_calib_roll;
 
-////////////////////////////////////////////////////////////////////////////////////////
-float pid_p_gain_roll = 0.7;    //0.7;                  //Gain setting for the roll P-controller
-float pid_i_gain_roll = 0.005;  //0.005;               //Gain setting for the roll I-controller
-float pid_d_gain_roll = 18.75;  //18.75;              //Gain setting for the roll D-controller
-int pid_max_roll = 400;                              //Maximum output of the PID-controller (+/-)
-float pid_p_gain_pitch = 0.7;   //0.7;              //Gain setting for the pitch P-controller.
-float pid_i_gain_pitch = 0.005; //0.005;           //Gain setting for the pitch I-controller.
-float pid_d_gain_pitch = 18.75; //18.75;          //Gain setting for the pitch D-controller.
-int pid_max_pitch = 400;                         //Maximum output of the PID-controller (+/-)
-float pid_p_gain_yaw = 3;                       //Gain setting for the pitch P-controller. //4.0
-float pid_i_gain_yaw = 0.02;    //0.02;        //Gain setting for the pitch I-controller. //0.02
-float pid_d_gain_yaw = 0;       //0.0;        //Gain setting for the pitch D-controller.
-int pid_max_yaw = 400;                       //Maximum output of the PID-controller (+/-)
-void Calculate_PID(void);
-float pid_error_temp;
-float pid_i_mem_roll, pid_roll_setpoint, gyro_roll_input, pid_output_roll, pid_last_roll_d_error;
-float pid_i_mem_pitch, pid_pitch_setpoint, gyro_pitch_input, pid_output_pitch, pid_last_pitch_d_error;
-float pid_i_mem_yaw, pid_yaw_setpoint, gyro_yaw_input, pid_output_yaw, pid_last_yaw_d_error;
-volatile int receiver_input_channel_1, receiver_input_channel_2, receiver_input_channel_3, receiver_input_channel_4;
-float roll_level_adjust, pitch_level_adjust;
-////////////////////////////////////////////////////////////////////////////////////////
+
+uint16_t zmienna_1;
+char str[42];
 
 
 void myTask1(void *p){
@@ -64,109 +35,18 @@ void myTask1(void *p){
 	myLastUnblock = xTaskGetTickCount();
 	
 	while(1){
-		
-		gyro_roll_input = (gyro_roll_input * 0.8) + ((gyro_roll / 65.5) * 0.2);   //Gyro pid input is deg/sec.
-		gyro_pitch_input = (gyro_pitch_input * 0.8) + ((gyro_pitch / 65.5) * 0.2);//Gyro pid input is deg/sec.
-		gyro_yaw_input = -((gyro_yaw_input * 0.8) + ((gyro_yaw / 65.5) * 0.2));      //Gyro pid input is deg/sec.
-		
 		Read_MPU6050_Data();
 		Calculate_MPU6050_Angles();
-//		Read_LSM9DS1_Data();
-//		Calculate_LSM9DS1_Angles();
 		
-			throttle = channel_0;
-			
-		if((channel_2<1050) && (channel_0<1050)){
-			start = false;
-			pid_i_mem_roll = 0;
-			pid_last_roll_d_error = 0;
-			pid_i_mem_pitch = 0;
-			pid_last_pitch_d_error = 0;
-			pid_i_mem_yaw = 0;
-			pid_last_yaw_d_error = 0;
-		}
-		else if((channel_2>1950) && (channel_0<1050)){
-			start = true;
-		}
-
-		angle_pitch_output = ((float)((int)(angle_pitch_output*10)))/10;
-		angle_roll_output = ((float)((int)(angle_roll_output*10)))/10;
-		
-		pitch_level_adjust = angle_pitch_output * 15; //*15                                   //Calculate the pitch angle correction
-		roll_level_adjust = angle_roll_output * 15;  //* 15                                    //Calculate the roll angle correction
-		
-		receiver_input_channel_1 = channel_3;
-		pid_roll_setpoint = 0;
-		if(receiver_input_channel_1 > 1508)pid_roll_setpoint = receiver_input_channel_1 - 1508;
-		else if(receiver_input_channel_1 < 1492)pid_roll_setpoint = receiver_input_channel_1 - 1492;
-		pid_roll_setpoint -= roll_level_adjust;                                   //Subtract the angle correction from the standardized receiver roll input value.
-		pid_roll_setpoint /= 3.0;                                                 //Divide the setpoint for the PID roll controller by 3 to get angles in degrees.
-
-		
-		receiver_input_channel_2 = channel_1;
-		pid_pitch_setpoint = 0;
-		if(receiver_input_channel_2 > 1508)pid_pitch_setpoint = receiver_input_channel_2 - 1508;
-		else if(receiver_input_channel_2 < 1492)pid_pitch_setpoint = receiver_input_channel_2 - 1492;
-		pid_pitch_setpoint -= pitch_level_adjust;                                  //Subtract the angle correction from the standardized receiver pitch input value.
-		pid_pitch_setpoint /= 3.0;                                                 //Divide the setpoint for the PID pitch controller by 3 to get angles in degrees.
-
-		receiver_input_channel_3 = channel_0;
-		receiver_input_channel_4 = channel_2;
-		pid_yaw_setpoint = 0;
-		if(receiver_input_channel_3 > 1050){ //Do not yaw when turning off the motors.
-			if(receiver_input_channel_4 > 1508)pid_yaw_setpoint = (receiver_input_channel_4 - 1508)/3.0;
-			else if(receiver_input_channel_4 < 1492)pid_yaw_setpoint = (receiver_input_channel_4 - 1492)/3.0;
-		}
-		
+		Secure_Startup();
+		Calculate_PID_Input();
 		Calculate_PID(); 
-		
-		if(start){                                                          //The motors are started.
-			if (throttle > 1800) throttle = 1800;                                   //We need some room to keep full control at full throttle.
-			Power_FR = throttle - pid_output_pitch + pid_output_roll - pid_output_yaw; //Calculate the pulse for esc 1 (front-right - CCW)
-			Power_BR = throttle + pid_output_pitch + pid_output_roll + pid_output_yaw; //Calculate the pulse for esc 2 (rear-right - CW)
-			Power_BL = throttle + pid_output_pitch - pid_output_roll - pid_output_yaw; //Calculate the pulse for esc 3 (rear-left - CCW)
-			Power_FL = throttle - pid_output_pitch - pid_output_roll + pid_output_yaw; //Calculate the pulse for esc 4 (front-left - CW)
+		Calculate_Motors_Speed();
+		Set_Motors_Speed();
 
-			if (battery_voltage < 1240 && battery_voltage > 800){                   //Is the battery connected?
-				Power_FL += Power_FL * ((1240 - battery_voltage)/(float)3500);              //Compensate the esc-1 pulse for voltage drop.
-				Power_BL += Power_BL * ((1240 - battery_voltage)/(float)3500);              //Compensate the esc-2 pulse for voltage drop.
-				Power_BR += Power_BR * ((1240 - battery_voltage)/(float)3500);              //Compensate the esc-3 pulse for voltage drop.
-				Power_FR += Power_FR * ((1240 - battery_voltage)/(float)3500);              //Compensate the esc-4 pulse for voltage drop.
-			} 
-
-			if (Power_FL < 1100) Power_FL = 1100;                                         //Keep the motors running.
-			if (Power_BL < 1100) Power_BL = 1100;                                         //Keep the motors running.
-			if (Power_BR < 1100) Power_BR = 1100;                                         //Keep the motors running.
-			if (Power_FR < 1100) Power_FR = 1100;                                         //Keep the motors running.
-
-			if(Power_FL > 2000)Power_FL = 2000;                                           //Limit the esc-1 pulse to 2000us.
-			if(Power_BL > 2000)Power_BL = 2000;                                           //Limit the esc-2 pulse to 2000us.
-			if(Power_BR > 2000)Power_BR = 2000;                                           //Limit the esc-3 pulse to 2000us.
-			if(Power_FR > 2000)Power_FR = 2000;                                           //Limit the esc-4 pulse to 2000us.  
-			}
-
-		else{
-			Power_FL = 1000;                                                           //If start is not 2 keep a 1000us pulse for ess-1.
-			Power_BL = 1000;                                                           //If start is not 2 keep a 1000us pulse for ess-2.
-			Power_BR = 1000;                                                           //If start is not 2 keep a 1000us pulse for ess-3.
-			Power_FR = 1000;                                                           //If start is not 2 keep a 1000us pulse for ess-4.
-		}
-		
-		PWM_Set_Value_FL_Motor(Power_FL);
-		PWM_Set_Value_FR_Motor(Power_FR);
-		PWM_Set_Value_BL_Motor(Power_BL);
-		PWM_Set_Value_BR_Motor(Power_BR);	
-
-
-//		for(int i=0; i<10000000; i++){
-//			angle_calib_pitch += angle_pitch_acc;
-//			angle_calib_roll += angle_roll_acc;
-//		}
-//		angle_calib_pitch /= 10000000;
-//		angle_calib_roll /= 10000000;
 		sprintf(str, "pitch: %f, roll: %f\r", angle_pitch_output, angle_roll_output);
-		//UART_0_Transmit(str, 42);
-		UART_1_Transmit(str, 42);
+		UART_0_Transmit(str, 42);                                                      //USB serial output
+		//UART_1_Transmit(str, 42);                                                   //radio serial output
 		
 		vTaskDelayUntil(&myLastUnblock, 4 * configTICK_RATE_HZ/1000); //4 ms period (250 Hz)
 		zmienna_1++;
@@ -176,11 +56,12 @@ void myTask1(void *p){
 void myTask2(void *p){
 	
 	while(1){
-			adcVal = (ADC_Value_Get())*0.3313;
-			battery_voltage = battery_voltage*0.92 + 0.08*adcVal;
-			battery_voltage = (int)battery_voltage;
-			if(battery_voltage<1050 && battery_voltage>600) LED_ON(red_led);
-			else LED_ON(green_led+red_led);
+		adcVal = (ADC_Value_Get())*0.3313;
+		battery_voltage = battery_voltage*0.92 + 0.08*adcVal;
+		battery_voltage = (int)battery_voltage;
+		if(battery_voltage<1050) LED_ON(red_led);
+		else if(battery_voltage<1155 && battery_voltage>1050) LED_ON(green_led+red_led);
+		else LED_ON(green_led);
 	}
 }
 
@@ -194,69 +75,14 @@ int main(){
 	I2C_Init();
 	ADC_Init();
 	Timer_Capture_Init();
-	battery_voltage = 1260;
-	
-	PWM_Set_Value_FL_Motor(2000);
-	PWM_Set_Value_FR_Motor(2000);
-	PWM_Set_Value_BL_Motor(2000);
-	PWM_Set_Value_BR_Motor(2000);
-	SysCtlDelay(100000000);
-	
-	PWM_Set_Value_FL_Motor(1000);
-	PWM_Set_Value_FR_Motor(1000);
-	PWM_Set_Value_BL_Motor(1000);
-	PWM_Set_Value_BR_Motor(1000);
-	SysCtlDelay(100000000);
-	
+	Calibrate_Motors();
 	Setup_MPU6050_Registers();
-//	Setup_LSM9DS1_Registers();
-	LED_ON(green_led);
+	
 	
 	xTaskCreate(myTask1, "task1", 200, (void*) 0, 2, &myTask1Handle);
 	xTaskCreate(myTask2, "task2", 200, (void*) 0, tskIDLE_PRIORITY, &myTask2Handle);
 	vTaskStartScheduler();
 	
 	while(1);
-}
-
-
-////////////////////////////////////////////////////////////////////////////////////
-void Calculate_PID(void){
-  //Roll calculations
-  pid_error_temp = gyro_roll_input - pid_roll_setpoint;
-  pid_i_mem_roll += pid_i_gain_roll * pid_error_temp;
-	
-  if(pid_i_mem_roll > pid_max_roll)pid_i_mem_roll = pid_max_roll;
-  else if(pid_i_mem_roll < pid_max_roll * -1)pid_i_mem_roll = pid_max_roll * -1;
-
-  pid_output_roll = pid_p_gain_roll * pid_error_temp + pid_i_mem_roll + pid_d_gain_roll * (pid_error_temp - pid_last_roll_d_error);
-  if(pid_output_roll > pid_max_roll)pid_output_roll = pid_max_roll;
-  else if(pid_output_roll < pid_max_roll * -1)pid_output_roll = pid_max_roll * -1;
-
-  pid_last_roll_d_error = pid_error_temp;
-
-  //Pitch calculations
-  pid_error_temp = gyro_pitch_input - pid_pitch_setpoint;
-  pid_i_mem_pitch += pid_i_gain_pitch * pid_error_temp;
-  if(pid_i_mem_pitch > pid_max_pitch)pid_i_mem_pitch = pid_max_pitch;
-  else if(pid_i_mem_pitch < pid_max_pitch * -1)pid_i_mem_pitch = pid_max_pitch * -1;
-
-  pid_output_pitch = pid_p_gain_pitch * pid_error_temp + pid_i_mem_pitch + pid_d_gain_pitch * (pid_error_temp - pid_last_pitch_d_error);
-  if(pid_output_pitch > pid_max_pitch)pid_output_pitch = pid_max_pitch;
-  else if(pid_output_pitch < pid_max_pitch * -1)pid_output_pitch = pid_max_pitch * -1;
-
-  pid_last_pitch_d_error = pid_error_temp;
-
-  //Yaw calculations
-  pid_error_temp = gyro_yaw_input - pid_yaw_setpoint;
-  pid_i_mem_yaw += pid_i_gain_yaw * pid_error_temp;
-  if(pid_i_mem_yaw > pid_max_yaw)pid_i_mem_yaw = pid_max_yaw;
-  else if(pid_i_mem_yaw < pid_max_yaw * -1)pid_i_mem_yaw = pid_max_yaw * -1;
-
-  pid_output_yaw = pid_p_gain_yaw * pid_error_temp + pid_i_mem_yaw + pid_d_gain_yaw * (pid_error_temp - pid_last_yaw_d_error);
-  if(pid_output_yaw > pid_max_yaw)pid_output_yaw = pid_max_yaw;
-  else if(pid_output_yaw < pid_max_yaw * -1)pid_output_yaw = pid_max_yaw * -1;
-
-  pid_last_yaw_d_error = pid_error_temp;
 }
 

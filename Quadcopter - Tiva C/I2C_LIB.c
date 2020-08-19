@@ -18,25 +18,25 @@ void I2C_Init(void)
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
 	SysCtlDelay(3);
 
-    GPIOPinConfigure(GPIO_PB2_I2C0SCL);
+	GPIOPinConfigure(GPIO_PB2_I2C0SCL);
 	GPIOPinConfigure(GPIO_PB3_I2C0SDA);
 
 	GPIOPinTypeI2CSCL(GPIO_PORTB_BASE, GPIO_PIN_2);
 	GPIOPinTypeI2C(GPIO_PORTB_BASE, GPIO_PIN_3);
 
-    I2CMasterInitExpClk(I2C0_BASE, SysCtlClockGet(), true);
+	I2CMasterInitExpClk(I2C0_BASE, SysCtlClockGet(), true);
 }
 
 void I2C_Read(uint8_t slave_addr, uint8_t reg, int *data)
 {
-    I2CMasterSlaveAddrSet(I2C0_BASE, slave_addr, false);
-    I2CMasterDataPut(I2C0_BASE, reg);
-    I2CMasterControl(I2C0_BASE, I2C_MASTER_CMD_BURST_SEND_START);
-    while(I2CMasterBusy(I2C0_BASE));
-    I2CMasterSlaveAddrSet(I2C0_BASE, slave_addr, true);
-    I2CMasterControl(I2C0_BASE, I2C_MASTER_CMD_SINGLE_RECEIVE);
-    while(I2CMasterBusy(I2C0_BASE));
-    *data = I2CMasterDataGet(I2C0_BASE);
+	I2CMasterSlaveAddrSet(I2C0_BASE, slave_addr, false);
+	I2CMasterDataPut(I2C0_BASE, reg);
+	I2CMasterControl(I2C0_BASE, I2C_MASTER_CMD_BURST_SEND_START);
+	while(I2CMasterBusy(I2C0_BASE));
+	I2CMasterSlaveAddrSet(I2C0_BASE, slave_addr, true);
+	I2CMasterControl(I2C0_BASE, I2C_MASTER_CMD_SINGLE_RECEIVE);
+	while(I2CMasterBusy(I2C0_BASE));
+	*data = I2CMasterDataGet(I2C0_BASE);
 }
 
 
@@ -46,7 +46,7 @@ void I2C_Write(uint8_t slave_addr, uint8_t reg, uint8_t data)
 	I2CMasterSlaveAddrSet(I2C0_BASE, slave_addr, false);
 	I2CMasterDataPut(I2C0_BASE, reg);
 	I2CMasterControl(I2C0_BASE, I2C_MASTER_CMD_BURST_SEND_START);
- 	while(I2CMasterBusy(I2C0_BASE));
+	while(I2CMasterBusy(I2C0_BASE));
 	I2CMasterDataPut(I2C0_BASE, data);
 	I2CMasterControl(I2C0_BASE, I2C_MASTER_CMD_BURST_SEND_FINISH);
 	while(I2CMasterBusy(I2C0_BASE));
