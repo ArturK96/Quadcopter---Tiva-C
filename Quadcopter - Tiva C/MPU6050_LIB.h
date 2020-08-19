@@ -4,7 +4,7 @@
 //extern float accel_x, accel_y, accel_z, gyro_x, gyro_y, gyro_z;
 
 ///////////////////////////////////////////////////////////////////////
-extern int16_t gyro_x, gyro_y, gyro_z, acc_x, acc_y, acc_z;
+extern int16_t gyro_x, gyro_y, gyro_z, acc_x, acc_y, acc_z, mag_x, mag_y, mag_z;
 extern float angle_pitch_output, angle_roll_output;
 extern float angle_pitch_acc, angle_roll_acc;
 extern float angle_pitch, angle_roll;
@@ -22,3 +22,7 @@ void MPU6050_Read_Data(void);
 void Setup_MPU6050_Registers(void);
 void Read_MPU6050_Data(void);
 void Calculate_MPU6050_Angles(void);
+
+void Setup_LSM9DS1_Registers(void);
+void Read_LSM9DS1_Data(void);
+void Calculate_LSM9DS1_Angles(void);

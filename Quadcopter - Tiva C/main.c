@@ -37,18 +37,18 @@ uint16_t angle_ready = 0;
 float angle_calib_pitch, angle_calib_roll;
 
 ////////////////////////////////////////////////////////////////////////////////////////
-float pid_p_gain_roll = 1.2; //1.3;               //Gain setting for the roll P-controller
-float pid_i_gain_roll = 0.01;//0.02; //0.04;              //Gain setting for the roll I-controller
-float pid_d_gain_roll = 10; //18.0;              //Gain setting for the roll D-controller
-int pid_max_roll = 400;                    //Maximum output of the PID-controller (+/-)
-float pid_p_gain_pitch = 1.2; //1.3;  //Gain setting for the pitch P-controller.
-float pid_i_gain_pitch = 0.01;//0.02; //0.04;  //Gain setting for the pitch I-controller.
-float pid_d_gain_pitch = 10; //18.0;  //Gain setting for the pitch D-controller.
-int pid_max_pitch = 400;          //Maximum output of the PID-controller (+/-)
-float pid_p_gain_yaw = 3; //4.0;                //Gain setting for the pitch P-controller. //4.0
-float pid_i_gain_yaw = 0.02; //0.02;               //Gain setting for the pitch I-controller. //0.02
-float pid_d_gain_yaw = 0; //0.0;                //Gain setting for the pitch D-controller.
-int pid_max_yaw = 400;                     //Maximum output of the PID-controller (+/-)
+float pid_p_gain_roll = 0.7;    //0.7;                  //Gain setting for the roll P-controller
+float pid_i_gain_roll = 0.005;  //0.005;               //Gain setting for the roll I-controller
+float pid_d_gain_roll = 18.75;  //18.75;              //Gain setting for the roll D-controller
+int pid_max_roll = 400;                              //Maximum output of the PID-controller (+/-)
+float pid_p_gain_pitch = 0.7;   //0.7;              //Gain setting for the pitch P-controller.
+float pid_i_gain_pitch = 0.005; //0.005;           //Gain setting for the pitch I-controller.
+float pid_d_gain_pitch = 18.75; //18.75;          //Gain setting for the pitch D-controller.
+int pid_max_pitch = 400;                         //Maximum output of the PID-controller (+/-)
+float pid_p_gain_yaw = 3;                       //Gain setting for the pitch P-controller. //4.0
+float pid_i_gain_yaw = 0.02;    //0.02;        //Gain setting for the pitch I-controller. //0.02
+float pid_d_gain_yaw = 0;       //0.0;        //Gain setting for the pitch D-controller.
+int pid_max_yaw = 400;                       //Maximum output of the PID-controller (+/-)
 void Calculate_PID(void);
 float pid_error_temp;
 float pid_i_mem_roll, pid_roll_setpoint, gyro_roll_input, pid_output_roll, pid_last_roll_d_error;
@@ -71,6 +71,8 @@ void myTask1(void *p){
 		
 		Read_MPU6050_Data();
 		Calculate_MPU6050_Angles();
+//		Read_LSM9DS1_Data();
+//		Calculate_LSM9DS1_Angles();
 		
 			throttle = channel_0;
 			
@@ -207,6 +209,7 @@ int main(){
 	SysCtlDelay(100000000);
 	
 	Setup_MPU6050_Registers();
+//	Setup_LSM9DS1_Registers();
 	LED_ON(green_led);
 	
 	xTaskCreate(myTask1, "task1", 200, (void*) 0, 2, &myTask1Handle);
